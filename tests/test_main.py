@@ -7,7 +7,9 @@ client = TestClient(app)
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"status": "running"}
+    data = response.json()
+    assert data["status"] == "running"
+    assert "llm_provider" in data
 
 
 def test_root_method_not_allowed():

@@ -1,14 +1,15 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from io import BytesIO
+from app.core.models import ExportRequest
 from app.services.export.word_exporter import build_word_document
 
 router = APIRouter()
 
 
 @router.post("/export")
-def export(payload: dict):
-    doc = build_word_document(payload)
+def export(payload: ExportRequest):
+    doc = build_word_document(payload.model_dump())
 
     buffer = BytesIO()
     doc.save(buffer)
