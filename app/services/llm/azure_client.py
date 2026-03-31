@@ -1,17 +1,22 @@
 import os
+import threading
 from openai import AzureOpenAI
+from app.core.config import LLM_MAX_TOKENS, LLM_TEMPERATURE
 
 _client = None
+_lock = threading.Lock()
 
 
 def _get_client():
     global _client
     if _client is None:
-        _client = AzureOpenAI(
-            api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
-            api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-01"),
-            azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
-        )
+        with _lock:
+            if _client is None:
+                _client = AzureOpenAI(
+                    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+                    api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-01"),
+                    azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
+                )
     return _client
 
 
@@ -20,8 +25,8 @@ def call_azure(prompt: str):
     deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
     response = client.chat.completions.create(
         model=deployment,
-        max_tokens=1000,
-        temperature=0.3,
+        max_tokens=LLM_MAX_TOKENS,
+        temperature=LLM_TEMPERATURE,
         messages=[{"role": "user", "content": prompt}],
     )
     return response.choices[0].message.content

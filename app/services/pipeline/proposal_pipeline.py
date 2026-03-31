@@ -46,7 +46,7 @@ def run_pipeline(rfp_text: str, proposal_texts: list[str] | None = None):
     sections = []
     for title in DEFAULT_SECTIONS:
         logger.info("Generating section: %s", title)
-        content = call_llm(build_section_prompt(title, analysis, rfp_text))
+        content = call_llm(build_section_prompt(title, analysis, rfp_text, outline))
         sections.append({"title": title, "content": content})
 
     return {"sections": sections}

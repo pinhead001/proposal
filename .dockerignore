@@ -3,3 +3,6 @@ __pycache__/
 venv/
 .env
 .git/
+data/
+tests/
+requirements-dev.txt

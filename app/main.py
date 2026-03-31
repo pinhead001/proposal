@@ -1,10 +1,11 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import generation, export, upload
-from app.core.config import LLM_PROVIDER
+from app.core.auth import verify_api_key
+from app.core.config import LLM_PROVIDER, CORS_ORIGINS
 from app.core.models import HealthResponse
 
 logging.basicConfig(
@@ -12,11 +13,15 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
-app = FastAPI(title="proposal-ai", version="0.1.0")
+app = FastAPI(
+    title="proposal-ai",
+    version="0.1.0",
+    dependencies=[Depends(verify_api_key)],
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -47,3 +47,16 @@ def test_upload_unsupported_file():
     )
     assert response.status_code == 400
     assert "Unsupported file type" in response.json()["detail"]
+
+
+@patch("app.api.routes.upload.MAX_UPLOAD_BYTES", 100)
+def test_upload_file_too_large():
+    large_content = _make_docx_bytes("x" * 200)
+    response = client.post(
+        "/upload-proposals",
+        files=[
+            ("files", ("big.docx", BytesIO(large_content), "application/octet-stream")),
+        ],
+    )
+    assert response.status_code == 413
+    assert "exceeds" in response.json()["detail"]
