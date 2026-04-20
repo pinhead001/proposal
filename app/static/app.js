@@ -24,6 +24,11 @@ const regenCancel = document.getElementById('regen-cancel');
 const regenSubmit = document.getElementById('regen-submit');
 const btnExpandAll = document.getElementById('btn-expand-all');
 const btnCollapseAll = document.getElementById('btn-collapse-all');
+const btnSave = document.getElementById('btn-save');
+const btnHistory = document.getElementById('btn-history');
+const historyPanel = document.getElementById('history-panel');
+const historyList = document.getElementById('history-list');
+const historyClose = document.getElementById('history-close');
 
 let pendingFiles = [];
 let regenTarget = null;
@@ -237,6 +242,7 @@ async function generateProposal() {
 
         progressBar.classList.add('hidden');
         btnExport.disabled = false;
+        btnSave.disabled = false;
         showToast('Proposal generated successfully!', 'success');
     } catch (err) {
         showToast(err.message, 'error');
@@ -417,6 +423,78 @@ document.addEventListener('keydown', e => {
         }
     }
 });
+
+// --- Save & History ---
+btnSave.addEventListener('click', async () => {
+    if (generatedSections.length === 0) return;
+    btnSave.disabled = true;
+
+    try {
+        const res = await fetch(`${API}/save-proposal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                rfp_text: rfpInput.value,
+                sections: generatedSections,
+            }),
+        });
+        if (!res.ok) throw new Error('Save failed');
+        showToast('Proposal saved!', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        btnSave.disabled = false;
+    }
+});
+
+btnHistory.addEventListener('click', openHistory);
+historyClose.addEventListener('click', () => historyPanel.classList.add('hidden'));
+historyPanel.querySelector('.side-panel-backdrop').addEventListener('click', () => historyPanel.classList.add('hidden'));
+
+async function openHistory() {
+    historyPanel.classList.remove('hidden');
+    historyList.innerHTML = '<p class="text-muted">Loading...</p>';
+
+    try {
+        const res = await fetch(`${API}/history`);
+        const data = await res.json();
+
+        if (data.length === 0) {
+            historyList.innerHTML = '<p class="text-muted">No saved proposals yet.</p>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.reverse().forEach(entry => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+
+            const date = new Date(entry.timestamp);
+            const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            item.innerHTML = `
+                <div class="history-date">${escapeHtml(dateStr)}</div>
+                <div class="history-preview">${escapeHtml(entry.rfp_preview)}</div>
+                <div class="history-sections">${entry.sections.length} sections</div>
+            `;
+
+            item.addEventListener('click', () => {
+                generatedSections = entry.sections;
+                sectionsContainer.innerHTML = '';
+                entry.sections.forEach((s, i) => appendSectionCard(s, i));
+                stepResults.classList.remove('hidden');
+                btnExport.disabled = false;
+                btnSave.disabled = false;
+                historyPanel.classList.add('hidden');
+                showToast('Proposal loaded from history', 'success');
+            });
+
+            historyList.appendChild(item);
+        });
+    } catch (err) {
+        historyList.innerHTML = '<p class="text-muted">Failed to load history.</p>';
+    }
+}
 
 // --- Export ---
 btnExport.addEventListener('click', async () => {

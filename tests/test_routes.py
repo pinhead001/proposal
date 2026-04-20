@@ -92,3 +92,25 @@ def test_regenerate_section(mock_regen):
 def test_regenerate_section_missing_fields():
     response = client.post("/regenerate-section", json={})
     assert response.status_code == 422
+
+
+def test_history_endpoint():
+    response = client.get("/history")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+@patch("app.api.routes.generation.save_to_history", return_value=1)
+def test_save_proposal(mock_save):
+    response = client.post("/save-proposal", json={
+        "rfp_text": "Test RFP",
+        "sections": [{"title": "Exec Summary", "content": "Content"}],
+    })
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    mock_save.assert_called_once()
+
+
+def test_request_id_header():
+    response = client.get("/api/health")
+    assert "x-request-id" in response.headers

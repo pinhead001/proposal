@@ -9,6 +9,7 @@ from app.services.pipeline.proposal_pipeline import (
     stream_pipeline,
     regenerate_section,
 )
+from app.services.storage.proposal_store import save_to_history, load_history
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -41,6 +42,19 @@ async def stream(payload: PipelineRequest):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.get("/history")
+def get_history():
+    return load_history()
+
+
+@router.post("/save-proposal")
+def save_proposal(payload: dict):
+    rfp_text = payload.get("rfp_text", "")
+    sections = payload.get("sections", [])
+    entry_id = save_to_history(rfp_text, sections)
+    return {"id": entry_id, "message": "Proposal saved to history"}
 
 
 class RegenerateRequest(BaseModel):

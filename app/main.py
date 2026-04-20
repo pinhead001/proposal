@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import generation, export, upload
 from app.core.auth import verify_api_key
 from app.core.config import LLM_PROVIDER, CORS_ORIGINS
+from app.core.middleware import RequestIDMiddleware
 from app.core.models import HealthResponse
 
 logging.basicConfig(
@@ -22,6 +23,7 @@ app = FastAPI(
     dependencies=[Depends(verify_api_key)],
 )
 
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,

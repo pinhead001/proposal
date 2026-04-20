@@ -14,6 +14,8 @@
                 <h1>Proposal AI</h1>
             </div>
             <div class="header-actions">
+                <button id="btn-save" class="btn btn-outline" disabled>Save</button>
+                <button id="btn-history" class="btn btn-outline">History</button>
                 <button id="btn-export" class="btn btn-outline" disabled>Export .docx</button>
             </div>
         </header>
@@ -78,6 +80,20 @@
     </div>
 
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- History panel -->
+    <div id="history-panel" class="side-panel hidden">
+        <div class="side-panel-backdrop"></div>
+        <div class="side-panel-content">
+            <div class="side-panel-header">
+                <h3>Proposal History</h3>
+                <button class="btn-icon" id="history-close">&times;</button>
+            </div>
+            <div id="history-list" class="history-list">
+                <p class="text-muted">No saved proposals yet.</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Regenerate modal -->
     <div id="regen-modal" class="modal hidden">

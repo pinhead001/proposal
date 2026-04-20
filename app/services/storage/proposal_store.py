@@ -47,3 +47,31 @@ def load_analysis() -> str | None:
 def clear_analysis():
     if os.path.exists(ANALYSIS_FILE):
         os.remove(ANALYSIS_FILE)
+
+
+HISTORY_FILE = os.path.join(STORE_DIR, "history.json")
+
+
+def save_to_history(rfp_text: str, sections: list[dict]):
+    _ensure_dir()
+    history = load_history()
+    import datetime
+    entry = {
+        "id": len(history) + 1,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "rfp_preview": rfp_text[:200],
+        "sections": sections,
+    }
+    history.append(entry)
+    # Keep last 20 entries
+    history = history[-20:]
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history, f, indent=2)
+    return entry["id"]
+
+
+def load_history() -> list[dict]:
+    if not os.path.exists(HISTORY_FILE):
+        return []
+    with open(HISTORY_FILE) as f:
+        return json.load(f)
