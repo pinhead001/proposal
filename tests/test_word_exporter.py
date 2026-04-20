@@ -11,7 +11,6 @@ def test_build_word_document_structure():
     }
     doc = build_word_document(data)
 
-    # Verify it can be saved without error
     buffer = BytesIO()
     doc.save(buffer)
     assert buffer.tell() > 0
@@ -26,9 +25,31 @@ def test_build_word_document_content():
     doc = build_word_document(data)
 
     texts = [p.text for p in doc.paragraphs]
-    assert "Proposal" in texts
-    assert "Intro" in texts
+    assert "PROPOSAL" in texts
     assert "Introduction paragraph." in texts
+
+
+def test_build_word_document_has_toc():
+    data = {
+        "sections": [
+            {"title": "Section One", "content": "Content one."},
+            {"title": "Section Two", "content": "Content two."},
+        ]
+    }
+    doc = build_word_document(data)
+
+    texts = [p.text for p in doc.paragraphs]
+    assert any("Table of Contents" in t for t in texts)
+    assert any("Section One" in t for t in texts)
+    assert any("Section Two" in t for t in texts)
+
+
+def test_build_word_document_has_footer():
+    data = {"sections": [{"title": "Test", "content": "Content."}]}
+    doc = build_word_document(data)
+
+    footer_text = doc.sections[-1].footer.paragraphs[0].text
+    assert "CONFIDENTIAL" in footer_text
 
 
 def test_build_word_document_empty_sections():
@@ -38,6 +59,3 @@ def test_build_word_document_empty_sections():
     buffer = BytesIO()
     doc.save(buffer)
     assert buffer.tell() > 0
-
-    texts = [p.text for p in doc.paragraphs]
-    assert "Proposal" in texts

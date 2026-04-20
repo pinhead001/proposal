@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from app.core.config import MAX_RFP_LENGTH
 
 
 class PipelineRequest(BaseModel):
@@ -6,6 +7,13 @@ class PipelineRequest(BaseModel):
     proposal_texts: list[str] | None = Field(
         None, description="Past proposal texts for style analysis (optional if proposals were uploaded)"
     )
+
+    @field_validator("rfp_text")
+    @classmethod
+    def validate_rfp_length(cls, v):
+        if len(v) > MAX_RFP_LENGTH:
+            raise ValueError(f"RFP text exceeds maximum length of {MAX_RFP_LENGTH:,} characters")
+        return v
 
 
 class SectionResponse(BaseModel):

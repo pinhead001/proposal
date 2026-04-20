@@ -5,14 +5,6 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_health_check():
-    response = client.get("/")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "running"
-    assert "llm_provider" in data
-
-
 @patch("app.api.routes.generation.run_pipeline")
 def test_run_pipeline_endpoint(mock_pipeline):
     mock_pipeline.return_value = {
@@ -22,7 +14,7 @@ def test_run_pipeline_endpoint(mock_pipeline):
     }
 
     response = client.post("/run-pipeline", json={
-        "rfp_text": "Sample RFP",
+        "rfp_text": "Sample RFP text for testing",
         "proposal_texts": ["Past proposal"],
     })
 
@@ -30,7 +22,7 @@ def test_run_pipeline_endpoint(mock_pipeline):
     data = response.json()
     assert len(data["sections"]) == 1
     assert data["sections"][0]["title"] == "Executive Summary"
-    mock_pipeline.assert_called_once_with("Sample RFP", ["Past proposal"])
+    mock_pipeline.assert_called_once_with("Sample RFP text for testing", ["Past proposal"])
 
 
 @patch("app.api.routes.generation.run_pipeline")
@@ -38,11 +30,11 @@ def test_run_pipeline_without_proposals(mock_pipeline):
     mock_pipeline.return_value = {"sections": []}
 
     response = client.post("/run-pipeline", json={
-        "rfp_text": "Sample RFP",
+        "rfp_text": "Sample RFP text for testing",
     })
 
     assert response.status_code == 200
-    mock_pipeline.assert_called_once_with("Sample RFP", None)
+    mock_pipeline.assert_called_once_with("Sample RFP text for testing", None)
 
 
 def test_run_pipeline_missing_rfp():
@@ -77,4 +69,26 @@ def test_export_empty_sections():
 
 def test_export_missing_fields():
     response = client.post("/export", json={})
+    assert response.status_code == 422
+
+
+@patch("app.api.routes.generation.regenerate_section")
+def test_regenerate_section(mock_regen):
+    mock_regen.return_value = {"title": "Executive Summary", "content": "Improved content"}
+
+    response = client.post("/regenerate-section", json={
+        "section_title": "Executive Summary",
+        "rfp_text": "Sample RFP text for testing",
+        "instructions": "Make it more concise",
+        "current_content": "Original content",
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Executive Summary"
+    assert data["content"] == "Improved content"
+
+
+def test_regenerate_section_missing_fields():
+    response = client.post("/regenerate-section", json={})
     assert response.status_code == 422

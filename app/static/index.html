@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposal AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">P</span>
+                <h1>Proposal AI</h1>
+            </div>
+            <div class="header-actions">
+                <button id="btn-export" class="btn btn-outline" disabled>Export .docx</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Step 1: Upload past proposals -->
+            <section class="step" id="step-upload">
+                <div class="step-header">
+                    <span class="step-number">1</span>
+                    <div>
+                        <h2>Upload Past Proposals</h2>
+                        <p class="step-desc">Upload 2-3 past proposals so we can learn your firm's voice and style.</p>
+                    </div>
+                </div>
+                <div class="upload-zone" id="upload-zone">
+                    <input type="file" id="file-input" multiple accept=".pdf,.docx" hidden>
+                    <div class="upload-content">
+                        <div class="upload-icon">+</div>
+                        <p>Drop PDF or DOCX files here, or <a href="#" id="browse-link">browse</a></p>
+                    </div>
+                </div>
+                <div id="file-list" class="file-list"></div>
+                <div id="upload-status" class="status-msg"></div>
+            </section>
+
+            <!-- Step 2: Paste RFP -->
+            <section class="step" id="step-rfp">
+                <div class="step-header">
+                    <span class="step-number">2</span>
+                    <div>
+                        <h2>Paste the RFP</h2>
+                        <p class="step-desc">Paste the Request for Proposal text you're responding to.</p>
+                    </div>
+                </div>
+                <textarea id="rfp-input" placeholder="Paste your RFP text here..." rows="10"></textarea>
+                <div class="rfp-footer">
+                    <span id="rfp-char-count" class="char-count">0 characters</span>
+                    <button id="btn-generate" class="btn btn-primary" disabled>Generate Proposal</button>
+                </div>
+            </section>
+
+            <!-- Step 3: Generated proposal -->
+            <section class="step hidden" id="step-results">
+                <div class="step-header">
+                    <span class="step-number">3</span>
+                    <div>
+                        <h2>Your Proposal</h2>
+                        <p class="step-desc">Review and edit each section. Click any section to refine it.</p>
+                    </div>
+                </div>
+                <div id="progress-bar" class="progress-bar hidden">
+                    <div class="progress-fill" id="progress-fill"></div>
+                    <span class="progress-text" id="progress-text">Analyzing style...</span>
+                </div>
+                <div id="sections-container" class="sections-container"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Regenerate modal -->
+    <div id="regen-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h3>Refine Section</h3>
+            <p id="regen-section-name"></p>
+            <textarea id="regen-instructions" placeholder="e.g. Make it more concise, add more metrics, change tone to be more confident..." rows="4"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="regen-cancel">Cancel</button>
+                <button class="btn btn-primary" id="regen-submit">Regenerate</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

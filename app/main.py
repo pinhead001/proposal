@@ -1,7 +1,10 @@
 import logging
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import generation, export, upload
 from app.core.auth import verify_api_key
@@ -15,7 +18,7 @@ logging.basicConfig(
 
 app = FastAPI(
     title="proposal-ai",
-    version="0.1.0",
+    version="0.2.0",
     dependencies=[Depends(verify_api_key)],
 )
 
@@ -31,7 +34,15 @@ app.include_router(generation.router)
 app.include_router(export.router)
 app.include_router(upload.router)
 
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-@app.get("/", response_model=HealthResponse)
-def root():
+
+@app.get("/api/health", response_model=HealthResponse)
+def health():
     return {"status": "running", "llm_provider": LLM_PROVIDER}
+
+
+@app.get("/")
+def root():
+    return FileResponse(str(STATIC_DIR / "index.html"))

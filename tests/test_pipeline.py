@@ -8,7 +8,6 @@ from app.services.pipeline.proposal_pipeline import run_pipeline, DEFAULT_SECTIO
 @patch("app.services.pipeline.proposal_pipeline.load_proposals", return_value=[])
 @patch("app.services.pipeline.proposal_pipeline.get_llm_client")
 def test_run_pipeline_calls_llm(mock_get_client, mock_load_p, mock_load_a, mock_save_a):
-    # 1 analyze + 1 outline + 5 sections = 7 calls
     mock_llm = MagicMock(side_effect=[
         "analysis result",
         "outline result",
@@ -37,11 +36,9 @@ def test_run_pipeline_passes_prompts_correctly(mock_get_client, mock_load_p, moc
 
     run_pipeline("My RFP", ["proposal A", "proposal B"])
 
-    # First call is analyze prompt - should contain proposal texts
     analyze_call = mock_llm.call_args_list[0]
     assert "proposal A" in analyze_call[0][0] or "proposal B" in analyze_call[0][0]
 
-    # Second call is outline prompt - should contain RFP
     outline_call = mock_llm.call_args_list[1]
     assert "My RFP" in outline_call[0][0]
 
@@ -50,13 +47,13 @@ def test_run_pipeline_passes_prompts_correctly(mock_get_client, mock_load_p, moc
 @patch("app.services.pipeline.proposal_pipeline.load_proposals", return_value=[])
 @patch("app.services.pipeline.proposal_pipeline.get_llm_client")
 def test_run_pipeline_uses_cached_analysis(mock_get_client, mock_load_p, mock_load_a):
-    # No analyze call needed, just outline + 5 sections = 6 calls
     mock_llm = MagicMock(return_value="mocked")
     mock_get_client.return_value = mock_llm
 
     run_pipeline("RFP text", ["past proposal"])
 
-    assert mock_llm.call_count == 6  # skipped analysis
+    # No analyze call, just outline + 5 sections = 6
+    assert mock_llm.call_count == 6
 
 
 @patch("app.services.pipeline.proposal_pipeline.save_analysis")
@@ -69,7 +66,6 @@ def test_run_pipeline_uses_stored_proposals(mock_get_client, mock_load_p, mock_l
 
     run_pipeline("RFP text")
 
-    # Analyze prompt should use stored proposal
     analyze_call = mock_llm.call_args_list[0]
     assert "stored proposal" in analyze_call[0][0]
 
@@ -79,3 +75,25 @@ def test_run_pipeline_uses_stored_proposals(mock_get_client, mock_load_p, mock_l
 def test_run_pipeline_no_proposals_raises(mock_load_p, mock_load_a):
     with pytest.raises(ValueError, match="No proposal texts provided"):
         run_pipeline("RFP text")
+
+
+@patch("app.services.pipeline.proposal_pipeline.get_llm_client")
+@patch("app.services.pipeline.proposal_pipeline.load_analysis", return_value="cached style")
+def test_regenerate_section(mock_load_a, mock_get_client):
+    from app.services.pipeline.proposal_pipeline import regenerate_section
+
+    mock_llm = MagicMock(return_value="improved content")
+    mock_get_client.return_value = mock_llm
+
+    result = regenerate_section(
+        section_title="Executive Summary",
+        rfp_text="RFP text",
+        instructions="Make it shorter",
+        current_content="Original draft",
+    )
+
+    assert result["title"] == "Executive Summary"
+    assert result["content"] == "improved content"
+    prompt = mock_llm.call_args[0][0]
+    assert "Make it shorter" in prompt
+    assert "Original draft" in prompt
