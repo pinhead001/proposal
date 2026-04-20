@@ -172,6 +172,44 @@ header h1 {
     font-size: 14px;
 }
 
+.step-header {
+    flex-wrap: wrap;
+}
+
+.step-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+/* Editable section */
+.section-card-body[contenteditable="true"] {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    border-radius: var(--radius-sm);
+}
+
+.section-card-body[contenteditable="true"] p {
+    color: var(--text);
+}
+
+.section-word-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 6px 18px 12px;
+    border-top: 1px solid var(--border);
+}
+
+.edit-actions {
+    display: flex;
+    gap: 6px;
+    padding: 0 18px 12px;
+}
+
+.edit-actions.hidden {
+    display: none;
+}
+
 /* Upload zone */
 .upload-zone {
     border: 2px dashed var(--border);

@@ -22,9 +22,22 @@ const regenSectionName = document.getElementById('regen-section-name');
 const regenInstructions = document.getElementById('regen-instructions');
 const regenCancel = document.getElementById('regen-cancel');
 const regenSubmit = document.getElementById('regen-submit');
+const btnExpandAll = document.getElementById('btn-expand-all');
+const btnCollapseAll = document.getElementById('btn-collapse-all');
 
 let pendingFiles = [];
 let regenTarget = null;
+
+// --- Utilities ---
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function wordCount(text) {
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
 
 // --- Toast ---
 function showToast(msg, type = 'info') {
@@ -84,23 +97,35 @@ function addFiles(files) {
 }
 
 function renderFileList() {
-    fileList.innerHTML = pendingFiles.map((f, i) => {
+    fileList.innerHTML = '';
+    pendingFiles.forEach((f, i) => {
         const ext = f.name.split('.').pop().toUpperCase();
         const size = (f.size / 1024).toFixed(0) + ' KB';
-        return `<div class="file-item">
-            <span class="file-name">
-                <span class="file-ext">${ext}</span>
-                ${f.name}
-            </span>
-            <span class="file-size">${size}</span>
-            <button class="file-remove" data-idx="${i}">&times;</button>
-        </div>`;
-    }).join('');
 
-    fileList.querySelectorAll('.file-remove').forEach(btn => {
-        btn.addEventListener('click', e => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'file-name';
+
+        const extBadge = document.createElement('span');
+        extBadge.className = 'file-ext';
+        extBadge.textContent = ext;
+
+        const nameText = document.createTextNode(' ' + f.name);
+        nameSpan.appendChild(extBadge);
+        nameSpan.appendChild(nameText);
+
+        const sizeSpan = document.createElement('span');
+        sizeSpan.className = 'file-size';
+        sizeSpan.textContent = size;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'file-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.addEventListener('click', e => {
             e.stopPropagation();
-            pendingFiles.splice(parseInt(btn.dataset.idx), 1);
+            pendingFiles.splice(i, 1);
             renderFileList();
             if (pendingFiles.length === 0) {
                 uploadedProposals = false;
@@ -109,6 +134,11 @@ function renderFileList() {
             }
             updateGenerateBtn();
         });
+
+        item.appendChild(nameSpan);
+        item.appendChild(sizeSpan);
+        item.appendChild(removeBtn);
+        fileList.appendChild(item);
     });
 
     updateGenerateBtn();
@@ -194,15 +224,10 @@ async function generateProposal() {
                 if (!line.startsWith('data: ')) continue;
                 const raw = line.slice(6).trim();
                 if (!raw || raw === '[DONE]') continue;
-
-                try {
-                    const event = JSON.parse(raw);
-                    handleStreamEvent(event);
-                } catch {}
+                try { handleStreamEvent(JSON.parse(raw)); } catch {}
             }
         }
 
-        // Process remaining buffer
         if (buffer.startsWith('data: ')) {
             const raw = buffer.slice(6).trim();
             if (raw && raw !== '[DONE]') {
@@ -231,9 +256,8 @@ function handleStreamEvent(event) {
             break;
 
         case 'section':
-            const section = event.data;
-            generatedSections.push(section);
-            appendSectionCard(section, generatedSections.length - 1);
+            generatedSections.push(event.data);
+            appendSectionCard(event.data, generatedSections.length - 1);
             break;
 
         case 'error':
@@ -251,10 +275,14 @@ function appendSectionCard(section, index) {
     const card = document.createElement('div');
     card.className = 'section-card';
     card.dataset.index = index;
+
+    const words = wordCount(section.content);
+
     card.innerHTML = `
         <div class="section-card-header">
-            <h3>${section.title}</h3>
+            <h3>${escapeHtml(section.title)}</h3>
             <div class="section-card-actions">
+                <button class="btn-icon edit-btn" title="Edit section">&#9998;</button>
                 <button class="btn-icon regen-btn" title="Regenerate with instructions">&#x21bb;</button>
                 <span class="collapse-icon">&#9660;</span>
             </div>
@@ -262,13 +290,49 @@ function appendSectionCard(section, index) {
         <div class="section-card-body">
             <p>${escapeHtml(section.content)}</p>
         </div>
+        <div class="edit-actions hidden">
+            <button class="btn btn-sm btn-primary save-edit-btn">Save</button>
+            <button class="btn btn-sm btn-outline cancel-edit-btn">Cancel</button>
+        </div>
+        <div class="section-word-count">${words} words</div>
     `;
 
-    card.querySelector('.section-card-header').addEventListener('click', e => {
-        if (e.target.closest('.regen-btn')) return;
+    const header = card.querySelector('.section-card-header');
+    const body = card.querySelector('.section-card-body');
+    const bodyP = body.querySelector('p');
+    const editActions = card.querySelector('.edit-actions');
+    const wordCountEl = card.querySelector('.section-word-count');
+
+    header.addEventListener('click', e => {
+        if (e.target.closest('.regen-btn') || e.target.closest('.edit-btn')) return;
         card.classList.toggle('collapsed');
     });
 
+    // Edit inline
+    let originalContent = '';
+    card.querySelector('.edit-btn').addEventListener('click', () => {
+        originalContent = bodyP.textContent;
+        body.contentEditable = 'true';
+        bodyP.focus();
+        editActions.classList.remove('hidden');
+    });
+
+    card.querySelector('.save-edit-btn').addEventListener('click', () => {
+        body.contentEditable = 'false';
+        editActions.classList.add('hidden');
+        const newContent = bodyP.textContent;
+        generatedSections[index].content = newContent;
+        wordCountEl.textContent = wordCount(newContent) + ' words';
+        showToast('Section updated', 'success');
+    });
+
+    card.querySelector('.cancel-edit-btn').addEventListener('click', () => {
+        body.contentEditable = 'false';
+        editActions.classList.add('hidden');
+        bodyP.textContent = originalContent;
+    });
+
+    // Regenerate
     card.querySelector('.regen-btn').addEventListener('click', () => {
         regenTarget = index;
         regenSectionName.textContent = `Refining: "${section.title}"`;
@@ -280,22 +344,22 @@ function appendSectionCard(section, index) {
     sectionsContainer.appendChild(card);
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// --- Expand/Collapse All ---
+btnExpandAll.addEventListener('click', () => {
+    sectionsContainer.querySelectorAll('.section-card').forEach(c => c.classList.remove('collapsed'));
+});
+
+btnCollapseAll.addEventListener('click', () => {
+    sectionsContainer.querySelectorAll('.section-card').forEach(c => c.classList.add('collapsed'));
+});
 
 // --- Regenerate section ---
-regenCancel.addEventListener('click', () => {
-    regenModal.classList.add('hidden');
-});
+regenCancel.addEventListener('click', () => regenModal.classList.add('hidden'));
+regenModal.querySelector('.modal-backdrop').addEventListener('click', () => regenModal.classList.add('hidden'));
 
-regenModal.querySelector('.modal-backdrop').addEventListener('click', () => {
-    regenModal.classList.add('hidden');
-});
+regenSubmit.addEventListener('click', submitRegen);
 
-regenSubmit.addEventListener('click', async () => {
+async function submitRegen() {
     if (regenTarget === null) return;
 
     const section = generatedSections[regenTarget];
@@ -304,6 +368,7 @@ regenSubmit.addEventListener('click', async () => {
 
     const card = sectionsContainer.querySelector(`[data-index="${regenTarget}"]`);
     const bodyP = card.querySelector('.section-card-body p');
+    const wordCountEl = card.querySelector('.section-word-count');
     card.classList.add('generating');
     bodyP.textContent = 'Regenerating...';
 
@@ -327,12 +392,29 @@ regenSubmit.addEventListener('click', async () => {
         const data = await res.json();
         generatedSections[regenTarget] = data;
         bodyP.textContent = data.content;
+        wordCountEl.textContent = wordCount(data.content) + ' words';
         card.classList.remove('generating');
         showToast(`"${section.title}" regenerated`, 'success');
     } catch (err) {
         bodyP.textContent = section.content;
         card.classList.remove('generating');
         showToast(err.message, 'error');
+    }
+}
+
+// --- Keyboard shortcuts ---
+document.addEventListener('keydown', e => {
+    // Escape closes modal
+    if (e.key === 'Escape' && !regenModal.classList.contains('hidden')) {
+        regenModal.classList.add('hidden');
+    }
+
+    // Ctrl/Cmd+Enter in modal submits
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (!regenModal.classList.contains('hidden')) {
+            e.preventDefault();
+            submitRegen();
+        }
     }
 });
 
