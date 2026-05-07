@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposal AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="toast-container"></div>
+
+    <header class="app-header">
+        <div class="header-left">
+            <h1 class="logo">Proposal<span class="logo-accent">AI</span></h1>
+        </div>
+        <div class="header-right">
+            <button id="btn-history" class="btn btn-outline btn-sm">History</button>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <!-- Step 1: Upload -->
+        <section class="step-card">
+            <div class="step-header">
+                <span class="step-number">1</span>
+                <h2>Upload Past Proposals</h2>
+            </div>
+            <p class="step-desc">Upload previous proposals (PDF or DOCX) so the AI can learn your writing style.</p>
+            <div id="upload-zone" class="upload-zone">
+                <div class="upload-icon">&#128196;</div>
+                <p>Drag & drop files here or <a id="browse-link" href="#">browse</a></p>
+                <p class="upload-hint">PDF, DOCX &mdash; max 10MB each</p>
+            </div>
+            <input type="file" id="file-input" multiple accept=".pdf,.docx" hidden>
+            <div id="file-list" class="file-list"></div>
+            <p id="upload-status" class="status-msg"></p>
+        </section>
+
+        <!-- Step 2: RFP -->
+        <section class="step-card">
+            <div class="step-header">
+                <span class="step-number">2</span>
+                <h2>Paste RFP Text</h2>
+            </div>
+            <p class="step-desc">Paste the full RFP (Request for Proposal) text that you're responding to.</p>
+            <textarea id="rfp-input" class="rfp-textarea" placeholder="Paste the RFP text here..." rows="10"></textarea>
+            <div class="rfp-footer">
+                <span id="rfp-char-count" class="char-count">0 characters</span>
+            </div>
+        </section>
+
+        <!-- Step 2.5: Section selector -->
+        <section class="step-card" id="section-selector-card">
+            <div class="step-header">
+                <span class="step-number">3</span>
+                <h2>Select Sections</h2>
+            </div>
+            <p class="step-desc">Choose which sections to include in your proposal.</p>
+            <div id="section-checkboxes" class="section-checkboxes"></div>
+            <div class="section-selector-actions">
+                <button id="btn-select-all" class="btn btn-sm btn-outline">Select All</button>
+                <button id="btn-deselect-all" class="btn btn-sm btn-outline">Deselect All</button>
+            </div>
+        </section>
+
+        <!-- Generate -->
+        <div class="generate-bar">
+            <button id="btn-generate" class="btn btn-primary btn-lg" disabled>Generate Proposal</button>
+        </div>
+
+        <!-- Step 3: Results -->
+        <section id="step-results" class="step-card hidden">
+            <div class="step-header">
+                <span class="step-number">4</span>
+                <h2>Generated Proposal</h2>
+                <div class="result-actions">
+                    <button id="btn-expand-all" class="btn btn-sm btn-outline">Expand All</button>
+                    <button id="btn-collapse-all" class="btn btn-sm btn-outline">Collapse All</button>
+                </div>
+            </div>
+
+            <div id="progress-bar" class="progress-bar hidden">
+                <div id="progress-fill" class="progress-fill"></div>
+                <span id="progress-text" class="progress-text">Starting...</span>
+            </div>
+
+            <div id="sections-container" class="sections-container"></div>
+
+            <div class="export-bar">
+                <button id="btn-save" class="btn btn-outline" disabled>Save to History</button>
+                <button id="btn-export" class="btn btn-primary" disabled>Export .docx</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Regenerate modal -->
+    <div id="regen-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h3 id="regen-section-name">Refine Section</h3>
+            <textarea id="regen-instructions" class="regen-textarea" placeholder="Describe how to improve this section... (e.g., 'Make it more concise', 'Add more technical detail')" rows="4"></textarea>
+            <div class="modal-actions">
+                <button id="regen-cancel" class="btn btn-outline">Cancel</button>
+                <button id="regen-submit" class="btn btn-primary">Regenerate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History panel -->
+    <div id="history-panel" class="side-panel hidden">
+        <div class="side-panel-backdrop"></div>
+        <div class="side-panel-content">
+            <div class="side-panel-header">
+                <h3>Proposal History</h3>
+                <button id="history-close" class="btn-icon">&times;</button>
+            </div>
+            <div id="history-list" class="history-list"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -14,7 +14,7 @@ def test_run_pipeline_endpoint(mock_pipeline):
     }
 
     response = client.post("/run-pipeline", json={
-        "rfp_text": "Sample RFP",
+        "rfp_text": "Sample RFP text for testing",
         "proposal_texts": ["Past proposal"],
     })
 
@@ -22,13 +22,29 @@ def test_run_pipeline_endpoint(mock_pipeline):
     data = response.json()
     assert len(data["sections"]) == 1
     assert data["sections"][0]["title"] == "Executive Summary"
-    mock_pipeline.assert_called_once_with("Sample RFP", ["Past proposal"])
+    mock_pipeline.assert_called_once_with("Sample RFP text for testing", ["Past proposal"], None)
 
 
-def test_run_pipeline_missing_fields():
-    client_no_raise = TestClient(app, raise_server_exceptions=False)
-    response = client_no_raise.post("/run-pipeline", json={})
-    assert response.status_code == 500
+@patch("app.api.routes.generation.run_pipeline")
+def test_run_pipeline_without_proposals(mock_pipeline):
+    mock_pipeline.return_value = {"sections": []}
+
+    response = client.post("/run-pipeline", json={
+        "rfp_text": "Sample RFP text for testing",
+    })
+
+    assert response.status_code == 200
+    mock_pipeline.assert_called_once_with("Sample RFP text for testing", None, None)
+
+
+def test_run_pipeline_missing_rfp():
+    response = client.post("/run-pipeline", json={})
+    assert response.status_code == 422
+
+
+def test_run_pipeline_empty_rfp():
+    response = client.post("/run-pipeline", json={"rfp_text": ""})
+    assert response.status_code == 422
 
 
 def test_export_endpoint():
@@ -47,7 +63,57 @@ def test_export_endpoint():
 
 
 def test_export_empty_sections():
-    payload = {"sections": []}
-    response = client.post("/export", json=payload)
+    response = client.post("/export", json={"sections": []})
+    assert response.status_code == 422
+
+
+def test_export_missing_fields():
+    response = client.post("/export", json={})
+    assert response.status_code == 422
+
+
+@patch("app.api.routes.generation.regenerate_section")
+def test_regenerate_section(mock_regen):
+    mock_regen.return_value = {"title": "Executive Summary", "content": "Improved content"}
+
+    response = client.post("/regenerate-section", json={
+        "section_title": "Executive Summary",
+        "rfp_text": "Sample RFP text for testing",
+        "instructions": "Make it more concise",
+        "current_content": "Original content",
+    })
+
     assert response.status_code == 200
-    assert len(response.content) > 0
+    data = response.json()
+    assert data["title"] == "Executive Summary"
+    assert data["content"] == "Improved content"
+
+
+def test_regenerate_section_missing_fields():
+    response = client.post("/regenerate-section", json={})
+    assert response.status_code == 422
+
+
+def test_history_endpoint():
+    response = client.get("/history")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+@patch("app.api.routes.generation.save_to_history", return_value=1)
+def test_save_proposal(mock_save):
+    response = client.post("/save-proposal", json={
+        "rfp_text": "Test RFP",
+        "sections": [{"title": "Exec Summary", "content": "Content"}],
+    })
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    mock_save.assert_called_once()
+
+
+def test_available_sections():
+    response = client.get("/available-sections")
+    assert response.status_code == 200
+    data = response.json()
+    assert "sections" in data
+    assert len(data["sections"]) > 0

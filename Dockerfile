@@ -10,11 +10,16 @@ RUN pip install --user --no-cache-dir -r requirements.txt
 # --- Runtime ---
 FROM python:3.11-slim
 
+RUN useradd -m -r appuser
 WORKDIR /app
-COPY --from=builder /root/.local /root/.local
+
+COPY --from=builder /root/.local /home/appuser/.local
 COPY app ./app
 
-ENV PATH=/root/.local/bin:$PATH
+RUN mkdir -p /app/data && chown -R appuser:appuser /app
+
+USER appuser
+ENV PATH=/home/appuser/.local/bin:$PATH
 
 EXPOSE 10000
 
