@@ -225,8 +225,9 @@ async function uploadFiles() {
         });
 
         if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'Upload failed');
+            let msg = 'Upload failed';
+            try { msg = (await res.json()).detail || msg; } catch {}
+            throw new Error(msg);
         }
 
         const data = await res.json();
@@ -235,7 +236,8 @@ async function uploadFiles() {
         uploadStatus.className = 'status-msg success';
         updateGenerateBtn();
     } catch (err) {
-        uploadStatus.textContent = err.message;
+        const msg = err.name === 'TypeError' ? 'Network error — is the server running?' : err.message;
+        uploadStatus.textContent = msg;
         uploadStatus.className = 'status-msg error';
     }
 }
@@ -274,8 +276,9 @@ async function generateProposal() {
         });
 
         if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'Generation failed');
+            let msg = 'Generation failed';
+            try { msg = (await res.json()).detail || msg; } catch {}
+            throw new Error(msg);
         }
 
         const reader = res.body.getReader();
