@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -15,7 +16,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 
 auth_dep = [Depends(verify_api_key)]
 
-app = FastAPI(title="Proposal AI", version="2.0.0")
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+    from app.services.pipeline.proposal_pipeline import _executor
+    _executor.shutdown(wait=False)
+
+
+app = FastAPI(title="Proposal AI", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(

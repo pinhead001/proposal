@@ -7,19 +7,22 @@ def build_section_prompt(
 ) -> str:
     context = ""
     if outline:
-        context += f"\n## Proposal Outline:\n{outline}\n"
+        context += f"\n<proposal_outline>\n{outline}\n</proposal_outline>\n"
     if prior_sections:
-        context += "\n## Previously Written Sections:\n"
+        context += "\n<previously_written_sections>\n"
         for s in prior_sections:
-            context += f"\n### {s['title']}\n{s['content']}\n"
+            context += f"\n<section title=\"{s['title']}\">\n{s['content']}\n</section>\n"
+        context += "</previously_written_sections>\n"
 
     return f"""You are an expert proposal writer. Write the "{section}" section of a government/business proposal.
 
-## RFP Requirements:
+<rfp_requirements>
 {rfp_text}
+</rfp_requirements>
 
-## Writing Style Guide:
+<style_guide>
 {analysis}
+</style_guide>
 {context}
 
 Write the "{section}" section following these guidelines:

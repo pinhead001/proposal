@@ -37,7 +37,6 @@ class ExportRequest(BaseModel):
 class UploadResponse(BaseModel):
     message: str
     file_count: int
-    extracted_texts: list[str]
 
 
 class HealthResponse(BaseModel):

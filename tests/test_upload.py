@@ -27,8 +27,7 @@ def test_upload_docx(mock_clear, mock_save):
     assert response.status_code == 200
     data = response.json()
     assert data["file_count"] == 1
-    assert len(data["extracted_texts"]) == 1
-    assert "Past proposal content here" in data["extracted_texts"][0]
+    assert "extracted_texts" not in data
     mock_save.assert_called_once()
     mock_clear.assert_called_once()
 

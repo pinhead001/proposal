@@ -1,11 +1,13 @@
 def build_outline_prompt(rfp_text: str, analysis: str) -> str:
     return f"""You are an expert proposal strategist. Based on the RFP requirements and the writing style analysis from past winning proposals, generate a detailed proposal outline.
 
-## RFP Requirements:
+<rfp_requirements>
 {rfp_text}
+</rfp_requirements>
 
-## Writing Style Analysis:
+<style_analysis>
 {analysis}
+</style_analysis>
 
 Create a comprehensive outline that:
 1. Addresses every requirement mentioned in the RFP

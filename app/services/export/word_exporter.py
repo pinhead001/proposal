@@ -1,7 +1,6 @@
 from docx import Document
-from docx.shared import Pt, Inches, RGBColor
+from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.section import WD_ORIENT
 
 
 def _set_font(run, name="Calibri", size=11, bold=False, color=None):
@@ -12,7 +11,7 @@ def _set_font(run, name="Calibri", size=11, bold=False, color=None):
         run.font.color.rgb = RGBColor(*color)
 
 
-def build_word_document(sections: list[dict]) -> Document:
+def build_word_document(sections: list) -> Document:
     doc = Document()
 
     style = doc.styles["Normal"]
@@ -44,7 +43,8 @@ def build_word_document(sections: list[dict]) -> Document:
     toc_heading = doc.add_heading("Table of Contents", level=1)
     for s in sections:
         toc_entry = doc.add_paragraph()
-        run = toc_entry.add_run(s["title"] if isinstance(s, dict) else s.title)
+        title_text = s["title"] if isinstance(s, dict) else s.title
+        run = toc_entry.add_run(title_text)
         _set_font(run, size=11, color=(0x1A, 0x3C, 0x6E))
 
     doc.add_page_break()

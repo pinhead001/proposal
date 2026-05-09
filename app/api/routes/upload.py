@@ -40,5 +40,4 @@ async def upload_proposals(files: list[UploadFile] = File(...)):
     return UploadResponse(
         message=f"Successfully processed {len(extracted)} file(s)",
         file_count=len(extracted),
-        extracted_texts=extracted,
     )

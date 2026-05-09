@@ -2,6 +2,7 @@ const API = '';
 let uploadedProposals = false;
 let generatedSections = [];
 let selectedSections = [];
+let generateController = null;
 
 // --- DOM refs ---
 const fileInput = document.getElementById('file-input');
@@ -257,6 +258,9 @@ function updateGenerateBtn() {
 btnGenerate.addEventListener('click', generateProposal);
 
 async function generateProposal() {
+    if (generateController) generateController.abort();
+    generateController = new AbortController();
+
     btnGenerate.disabled = true;
     btnGenerate.innerHTML = '<span class="spinner"></span>Generating...';
     stepResults.classList.remove('hidden');
@@ -273,6 +277,7 @@ async function generateProposal() {
                 rfp_text: rfpInput.value,
                 sections: selectedSections,
             }),
+            signal: generateController.signal,
         });
 
         if (!res.ok) {
@@ -286,7 +291,14 @@ async function generateProposal() {
         let buffer = '';
 
         while (true) {
-            const { done, value } = await reader.read();
+            let result;
+            try {
+                result = await reader.read();
+            } catch (readErr) {
+                if (readErr.name === 'AbortError') return;
+                throw new Error('Connection lost during generation');
+            }
+            const { done, value } = result;
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
@@ -313,9 +325,11 @@ async function generateProposal() {
         btnSave.disabled = false;
         showToast('Proposal generated successfully!', 'success');
     } catch (err) {
+        if (err.name === 'AbortError') return;
         showToast(err.message, 'error');
         progressBar.classList.add('hidden');
     } finally {
+        generateController = null;
         btnGenerate.disabled = false;
         btnGenerate.textContent = 'Generate Proposal';
         updateGenerateBtn();
@@ -457,6 +471,10 @@ async function submitRegen() {
     regenModal.classList.add('hidden');
 
     const card = sectionsContainer.querySelector(`[data-index="${regenTarget}"]`);
+    if (!card) {
+        showToast('Section not found', 'error');
+        return;
+    }
     const bodyP = card.querySelector('.section-card-body p');
     const wordCountEl = card.querySelector('.section-word-count');
     card.classList.add('generating');
