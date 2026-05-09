@@ -112,6 +112,21 @@ async def stream_pipeline(
     yield {"type": "done"}
 
 
+def _build_regenerate_prompt(
+    section_title: str,
+    rfp_text: str,
+    instructions: str = "",
+    current_content: str = "",
+) -> str:
+    analysis = load_analysis() or ""
+    parts = [build_section_prompt(section_title, analysis, rfp_text)]
+    if instructions:
+        parts.append(f"\n## Refinement Instructions:\n{instructions}\n")
+    if current_content:
+        parts.append(f"\n## Current Draft (improve this):\n{current_content}\n")
+    return "".join(parts)
+
+
 def regenerate_section(
     section_title: str,
     rfp_text: str,
@@ -119,15 +134,8 @@ def regenerate_section(
     current_content: str = "",
 ) -> dict:
     call_llm = get_llm_client()
-
-    analysis = load_analysis() or ""
-    refinement = ""
-    if instructions:
-        refinement = f"\n## Refinement Instructions:\n{instructions}\n"
-    if current_content:
-        refinement += f"\n## Current Draft (improve this):\n{current_content}\n"
-
-    prompt = build_section_prompt(section_title, analysis, rfp_text) + refinement
-
+    prompt = _build_regenerate_prompt(
+        section_title, rfp_text, instructions, current_content,
+    )
     content = call_llm(prompt)
     return {"title": section_title, "content": content}

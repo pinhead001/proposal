@@ -3,11 +3,21 @@ from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.text.run import Run
 
+BRAND_COLOR = (0x1A, 0x3C, 0x6E)
+SUBTITLE_COLOR = (0x66, 0x66, 0x66)
+FOOTER_COLOR = (0x99, 0x99, 0x99)
+BODY_FONT = "Calibri"
+BODY_SIZE = 11
+TITLE_SIZE = 28
+SUBTITLE_SIZE = 14
+FOOTER_SIZE = 8
+TITLE_PAGE_SPACER_COUNT = 6
+
 
 def _set_font(
     run: Run,
-    name: str = "Calibri",
-    size: int = 11,
+    name: str = BODY_FONT,
+    size: int = BODY_SIZE,
     bold: bool = False,
     color: tuple[int, int, int] | None = None,
 ) -> None:
@@ -28,13 +38,13 @@ def build_word_document(sections: list) -> Document:
     doc = Document()
 
     style = doc.styles["Normal"]
-    style.font.name = "Calibri"
-    style.font.size = Pt(11)
+    style.font.name = BODY_FONT
+    style.font.size = Pt(BODY_SIZE)
 
     for i in range(1, 4):
         heading_style = doc.styles[f"Heading {i}"]
-        heading_style.font.name = "Calibri"
-        heading_style.font.color.rgb = RGBColor(0x1A, 0x3C, 0x6E)
+        heading_style.font.name = BODY_FONT
+        heading_style.font.color.rgb = RGBColor(*BRAND_COLOR)
 
     _build_title_page(doc)
     _build_toc(doc, sections)
@@ -45,18 +55,18 @@ def build_word_document(sections: list) -> Document:
 
 
 def _build_title_page(doc: Document) -> None:
-    for _ in range(6):
+    for _ in range(TITLE_PAGE_SPACER_COUNT):
         doc.add_paragraph()
 
     title = doc.add_paragraph()
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = title.add_run("PROPOSAL")
-    _set_font(run, size=28, bold=True, color=(0x1A, 0x3C, 0x6E))
+    _set_font(run, size=TITLE_SIZE, bold=True, color=BRAND_COLOR)
 
     subtitle = doc.add_paragraph()
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = subtitle.add_run("Prepared in Response to RFP Requirements")
-    _set_font(run, size=14, color=(0x66, 0x66, 0x66))
+    _set_font(run, size=SUBTITLE_SIZE, color=SUBTITLE_COLOR)
 
     doc.add_page_break()
 
@@ -66,7 +76,7 @@ def _build_toc(doc: Document, sections: list) -> None:
     for s in sections:
         toc_entry = doc.add_paragraph()
         run = toc_entry.add_run(_get_field(s, "title"))
-        _set_font(run, size=11, color=(0x1A, 0x3C, 0x6E))
+        _set_font(run, size=BODY_SIZE, color=BRAND_COLOR)
 
     doc.add_page_break()
 
@@ -104,4 +114,4 @@ def _build_footer(doc: Document) -> None:
     p = footer.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run("CONFIDENTIAL")
-    _set_font(run, size=8, color=(0x99, 0x99, 0x99))
+    _set_font(run, size=FOOTER_SIZE, color=FOOTER_COLOR)

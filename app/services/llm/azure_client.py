@@ -1,15 +1,11 @@
 import logging
 import os
 import threading
-import time
-from typing import Callable
 
 from app.core.config import LLM_MAX_TOKENS, LLM_TEMPERATURE
+from app.services.llm.retry import with_retries
 
 logger = logging.getLogger(__name__)
-
-MAX_RETRIES = 3
-RETRY_BASE_DELAY = 2
 
 _client = None
 _lock = threading.Lock()
@@ -34,22 +30,18 @@ def call_azure(prompt: str) -> str:
 
     client = _get_client()
     deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
-    for attempt in range(MAX_RETRIES + 1):
-        try:
-            response = client.chat.completions.create(
-                model=deployment,
-                max_tokens=LLM_MAX_TOKENS,
-                temperature=LLM_TEMPERATURE,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            if not response.choices:
-                raise RuntimeError("Azure LLM returned empty response")
-            return response.choices[0].message.content
-        except RuntimeError:
-            raise
-        except (APITimeoutError, RateLimitError, APIError) as e:
-            if attempt == MAX_RETRIES:
-                raise
-            delay = RETRY_BASE_DELAY * (2 ** attempt)
-            logger.warning("Azure call attempt %d failed (%s), retrying in %ds", attempt + 1, type(e).__name__, delay)
-            time.sleep(delay)
+
+    def _call() -> str:
+        response = client.chat.completions.create(
+            model=deployment,
+            max_tokens=LLM_MAX_TOKENS,
+            temperature=LLM_TEMPERATURE,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        if not response.choices:
+            raise RuntimeError("Azure LLM returned empty response")
+        return response.choices[0].message.content
+
+    return with_retries(
+        _call, (APITimeoutError, RateLimitError, APIError), label="Azure",
+    )

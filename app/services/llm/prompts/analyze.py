@@ -1,7 +1,9 @@
 def build_analyze_prompt(texts: list[str]) -> str:
-    enumerated = ""
-    for i, text in enumerate(texts, 1):
-        enumerated += f"\n<proposal index=\"{i}\">\n{text}\n</proposal>\n"
+    parts = [
+        f'\n<proposal index="{i}">\n{text}\n</proposal>'
+        for i, text in enumerate(texts, 1)
+    ]
+    enumerated = "\n".join(parts)
 
     return f"""You are an expert proposal analyst. Analyze the writing style across these past proposals and extract patterns that should be replicated in future proposals.
 

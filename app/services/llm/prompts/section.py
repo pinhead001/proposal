@@ -5,14 +5,20 @@ def build_section_prompt(
     outline: str = "",
     prior_sections: list[dict] | None = None,
 ) -> str:
-    context = ""
+    parts: list[str] = []
     if outline:
-        context += f"\n<proposal_outline>\n{outline}\n</proposal_outline>\n"
+        parts.append(f"\n<proposal_outline>\n{outline}\n</proposal_outline>\n")
     if prior_sections:
-        context += "\n<previously_written_sections>\n"
-        for s in prior_sections:
-            context += f"\n<section title=\"{s['title']}\">\n{s['content']}\n</section>\n"
-        context += "</previously_written_sections>\n"
+        section_blocks = [
+            f'\n<section title="{s["title"]}">\n{s["content"]}\n</section>'
+            for s in prior_sections
+        ]
+        parts.append(
+            "\n<previously_written_sections>"
+            + "".join(section_blocks)
+            + "\n</previously_written_sections>\n"
+        )
+    context = "".join(parts)
 
     return f"""You are an expert proposal writer. Write the "{section}" section of a government/business proposal.
 

@@ -1,10 +1,11 @@
 import logging
+from pathlib import PurePath
 
 logger = logging.getLogger(__name__)
 
 
 def extract_text(file_bytes: bytes, filename: str) -> str:
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    ext = PurePath(filename).suffix.lstrip(".").lower()
 
     if ext == "pdf":
         return _extract_pdf(file_bytes)

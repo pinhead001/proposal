@@ -3,7 +3,6 @@ import logging
 import threading
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Callable
 
 import os
 
