@@ -111,6 +111,27 @@ def test_save_proposal(mock_save):
     mock_save.assert_called_once()
 
 
+def test_save_proposal_missing_fields():
+    response = client.post("/save-proposal", json={})
+    assert response.status_code == 422
+
+
+def test_save_proposal_empty_rfp():
+    response = client.post("/save-proposal", json={
+        "rfp_text": "",
+        "sections": [{"title": "S", "content": "C"}],
+    })
+    assert response.status_code == 422
+
+
+def test_save_proposal_invalid_sections():
+    response = client.post("/save-proposal", json={
+        "rfp_text": "Test RFP",
+        "sections": [{"title": "Missing content field"}],
+    })
+    assert response.status_code == 422
+
+
 def test_available_sections():
     response = client.get("/available-sections")
     assert response.status_code == 200

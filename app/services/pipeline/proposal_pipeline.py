@@ -97,19 +97,14 @@ async def stream_pipeline(
     yield {"type": "progress", "percent": 20, "message": "Generating outline..."}
     outline = await _call_llm_async(build_outline_prompt(rfp_text, analysis))
 
-    yield {"type": "progress", "percent": 30, "message": f"Generating {len(titles)} sections in parallel..."}
+    yield {"type": "progress", "percent": 30, "message": f"Generating {len(titles)} sections..."}
 
-    section_tasks = []
-    for title in titles:
-        prompt = build_section_prompt(title, analysis, rfp_text, outline)
-        section_tasks.append((title, _call_llm_async(prompt)))
-
-    tasks = [task for _, task in section_tasks]
-    results = await asyncio.gather(*tasks)
-
-    for i, (title, _) in enumerate(section_tasks):
-        content = results[i]
+    sections = []
+    for i, title in enumerate(titles):
+        prompt = build_section_prompt(title, analysis, rfp_text, outline, sections)
+        content = await _call_llm_async(prompt)
         section = {"title": title, "content": content}
+        sections.append(section)
         pct = 30 + int(((i + 1) / len(titles)) * 65)
         yield {"type": "progress", "percent": pct, "message": f"Completed: {title}"}
         yield {"type": "section", "data": section}

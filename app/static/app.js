@@ -390,6 +390,14 @@ function appendSectionCard(section, index) {
         });
     });
 
+    // Strip HTML on paste into contentEditable
+    body.addEventListener('paste', e => {
+        if (body.contentEditable !== 'true') return;
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        document.execCommand('insertText', false, text);
+    });
+
     // Edit inline
     let originalContent = '';
     card.querySelector('.edit-btn').addEventListener('click', () => {

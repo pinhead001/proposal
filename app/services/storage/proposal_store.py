@@ -31,8 +31,12 @@ def load_proposals() -> list[str]:
     if not os.path.exists(PROPOSALS_FILE):
         return []
     with _lock:
-        with open(PROPOSALS_FILE) as f:
-            return json.load(f)
+        try:
+            with open(PROPOSALS_FILE) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error("Failed to load proposals: %s", e)
+            return []
 
 
 def save_analysis(analysis: str):
@@ -46,9 +50,13 @@ def load_analysis() -> str | None:
     if not os.path.exists(ANALYSIS_FILE):
         return None
     with _lock:
-        with open(ANALYSIS_FILE) as f:
-            data = json.load(f)
-            return data.get("analysis")
+        try:
+            with open(ANALYSIS_FILE) as f:
+                data = json.load(f)
+                return data.get("analysis")
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error("Failed to load analysis: %s", e)
+            return None
 
 
 def clear_analysis():
@@ -83,5 +91,9 @@ def load_history() -> list[dict]:
 def _load_history_unlocked() -> list[dict]:
     if not os.path.exists(HISTORY_FILE):
         return []
-    with open(HISTORY_FILE) as f:
-        return json.load(f)
+    try:
+        with open(HISTORY_FILE) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        logger.error("Failed to load history: %s", e)
+        return []

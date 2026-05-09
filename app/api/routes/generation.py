@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from app.core.models import PipelineRequest, PipelineResponse
+from app.core.models import PipelineRequest, PipelineResponse, SectionResponse
 from app.services.pipeline.proposal_pipeline import (
     run_pipeline,
     stream_pipeline,
@@ -55,19 +55,22 @@ def get_history():
     return load_history()
 
 
+class SaveProposalRequest(BaseModel):
+    rfp_text: str = Field(..., min_length=1)
+    sections: list[SectionResponse]
+
+
 @router.post("/save-proposal")
-def save_proposal(payload: dict):
-    rfp_text = payload.get("rfp_text", "")
-    sections = payload.get("sections", [])
-    entry_id = save_to_history(rfp_text, sections)
+def save_proposal(payload: SaveProposalRequest):
+    entry_id = save_to_history(payload.rfp_text, [s.model_dump() for s in payload.sections])
     return {"id": entry_id, "message": "Proposal saved to history"}
 
 
 class RegenerateRequest(BaseModel):
-    section_title: str = Field(..., min_length=1)
+    section_title: str = Field(..., min_length=1, max_length=200)
     rfp_text: str = Field(..., min_length=1)
-    instructions: str = ""
-    current_content: str = ""
+    instructions: str = Field("", max_length=5000)
+    current_content: str = Field("", max_length=100000)
 
 
 @router.post("/regenerate-section")

@@ -9,12 +9,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 MAX_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+MAX_FILES = 20
 
 
 @router.post("/upload-proposals", response_model=UploadResponse)
 async def upload_proposals(files: list[UploadFile] = File(...)):
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
+    if len(files) > MAX_FILES:
+        raise HTTPException(status_code=400, detail=f"Maximum {MAX_FILES} files allowed")
 
     extracted = []
     for f in files:

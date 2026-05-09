@@ -13,20 +13,22 @@ from app.api.routes.upload import router as upload_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
-app = FastAPI(title="Proposal AI", version="2.0.0", dependencies=[Depends(verify_api_key)])
+auth_dep = [Depends(verify_api_key)]
+
+app = FastAPI(title="Proposal AI", version="2.0.0")
 
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials="*" not in CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(generation.router)
-app.include_router(export.router)
-app.include_router(upload_router)
+app.include_router(generation.router, dependencies=auth_dep)
+app.include_router(export.router, dependencies=auth_dep)
+app.include_router(upload_router, dependencies=auth_dep)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 

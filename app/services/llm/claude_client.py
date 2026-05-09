@@ -36,6 +36,8 @@ def call_claude(prompt: str) -> str:
                 temperature=LLM_TEMPERATURE,
                 messages=[{"role": "user", "content": prompt}],
             )
+            if not response.content:
+                raise RuntimeError("LLM returned empty response")
             return response.content[0].text
         except (APITimeoutError, RateLimitError) as e:
             if attempt == MAX_RETRIES:

@@ -39,7 +39,11 @@ def call_azure(prompt: str) -> str:
                 temperature=LLM_TEMPERATURE,
                 messages=[{"role": "user", "content": prompt}],
             )
+            if not response.choices:
+                raise RuntimeError("Azure LLM returned empty response")
             return response.choices[0].message.content
+        except RuntimeError:
+            raise
         except Exception as e:
             if attempt == MAX_RETRIES:
                 raise
