@@ -2,6 +2,7 @@ import logging
 import os
 import threading
 import time
+from typing import Callable
 
 from app.core.config import LLM_MAX_TOKENS, LLM_TEMPERATURE
 
@@ -29,6 +30,8 @@ def _get_client():
 
 
 def call_azure(prompt: str) -> str:
+    from openai import APITimeoutError, RateLimitError, APIError
+
     client = _get_client()
     deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
     for attempt in range(MAX_RETRIES + 1):
@@ -44,9 +47,9 @@ def call_azure(prompt: str) -> str:
             return response.choices[0].message.content
         except RuntimeError:
             raise
-        except Exception as e:
+        except (APITimeoutError, RateLimitError, APIError) as e:
             if attempt == MAX_RETRIES:
                 raise
             delay = RETRY_BASE_DELAY * (2 ** attempt)
-            logger.warning("Azure call attempt %d failed (%s), retrying in %ds", attempt + 1, e, delay)
+            logger.warning("Azure call attempt %d failed (%s), retrying in %ds", attempt + 1, type(e).__name__, delay)
             time.sleep(delay)

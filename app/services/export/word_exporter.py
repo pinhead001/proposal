@@ -1,14 +1,27 @@
 from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.text.run import Run
 
 
-def _set_font(run, name="Calibri", size=11, bold=False, color=None):
+def _set_font(
+    run: Run,
+    name: str = "Calibri",
+    size: int = 11,
+    bold: bool = False,
+    color: tuple[int, int, int] | None = None,
+) -> None:
     run.font.name = name
     run.font.size = Pt(size)
     run.font.bold = bold
     if color:
         run.font.color.rgb = RGBColor(*color)
+
+
+def _get_field(section: dict | object, field: str) -> str:
+    if isinstance(section, dict):
+        return section[field]
+    return getattr(section, field)
 
 
 def build_word_document(sections: list) -> Document:
@@ -23,7 +36,15 @@ def build_word_document(sections: list) -> Document:
         heading_style.font.name = "Calibri"
         heading_style.font.color.rgb = RGBColor(0x1A, 0x3C, 0x6E)
 
-    # Title page
+    _build_title_page(doc)
+    _build_toc(doc, sections)
+    _build_sections(doc, sections)
+    _build_footer(doc)
+
+    return doc
+
+
+def _build_title_page(doc: Document) -> None:
     for _ in range(6):
         doc.add_paragraph()
 
@@ -39,20 +60,21 @@ def build_word_document(sections: list) -> Document:
 
     doc.add_page_break()
 
-    # Table of contents placeholder
-    toc_heading = doc.add_heading("Table of Contents", level=1)
+
+def _build_toc(doc: Document, sections: list) -> None:
+    doc.add_heading("Table of Contents", level=1)
     for s in sections:
         toc_entry = doc.add_paragraph()
-        title_text = s["title"] if isinstance(s, dict) else s.title
-        run = toc_entry.add_run(title_text)
+        run = toc_entry.add_run(_get_field(s, "title"))
         _set_font(run, size=11, color=(0x1A, 0x3C, 0x6E))
 
     doc.add_page_break()
 
-    # Sections
+
+def _build_sections(doc: Document, sections: list) -> None:
     for s in sections:
-        title_text = s["title"] if isinstance(s, dict) else s.title
-        content_text = s["content"] if isinstance(s, dict) else s.content
+        title_text = _get_field(s, "title")
+        content_text = _get_field(s, "content")
 
         doc.add_heading(title_text, level=1)
 
@@ -74,7 +96,8 @@ def build_word_document(sections: list) -> Document:
 
         doc.add_page_break()
 
-    # Footer
+
+def _build_footer(doc: Document) -> None:
     section = doc.sections[-1]
     footer = section.footer
     footer.is_linked_to_previous = False
@@ -82,5 +105,3 @@ def build_word_document(sections: list) -> Document:
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run("CONFIDENTIAL")
     _set_font(run, size=8, color=(0x99, 0x99, 0x99))
-
-    return doc
