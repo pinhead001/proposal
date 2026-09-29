@@ -3,3 +3,9 @@ __pycache__/
 venv/
 .env
 .git/
+.pytest_cache/
+
+# Never bake local runtime state into the image — it would ship one machine's
+# proposal data to every container.
+data/
+tests/

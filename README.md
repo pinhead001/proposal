@@ -32,14 +32,41 @@ export ANTHROPIC_API_KEY=your_key
 uvicorn app.main:app --reload
 ```
 
+`.env.example` documents every supported variable. The app reads the process
+environment directly — it does not parse `.env` — so for local runs either
+export the variables as above, or load the file into your shell first:
+
+```bash
+cp .env.example .env    # fill in ANTHROPIC_API_KEY
+set -a; source .env; set +a
+```
+
+Docker reads the file directly via `--env-file`; see below.
+
 Open `http://localhost:8000` for the web UI, or `http://localhost:8000/docs` for the Swagger API docs.
 
 ## Docker
 
 ```bash
 docker build -t proposal-ai .
-docker run -p 8000:10000 -e ANTHROPIC_API_KEY=your_key proposal-ai
+docker run -p 8000:10000 \
+  --env-file .env \
+  -v proposal-data:/app/data \
+  proposal-ai
 ```
+
+The `-v` mount is not optional in any setup where the data matters. Uploaded
+proposals, the cached style analysis, and generation history all live in
+`/app/data`; without a volume they are discarded when the container is replaced.
+
+The image declares a `HEALTHCHECK` against `/api/health`, so `docker ps` reports
+container health and orchestrators can restart a wedged process.
+
+**Run a single worker.** `proposal_store` serializes writes with an in-process
+`threading.Lock`, which does not hold across worker processes — running multiple
+workers will interleave writes and corrupt `history.json`. The image's default
+command pins `--workers 1`; keep it that way unless the storage layer is moved
+to SQLite or given file locking.
 
 ## Environment Variables
 

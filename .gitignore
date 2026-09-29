@@ -3,3 +3,7 @@ __pycache__/
 .pytest_cache/
 venv/
 .env
+
+# Runtime state: uploaded proposal text, cached style analysis, generation
+# history. Contains customer content — never commit.
+data/
